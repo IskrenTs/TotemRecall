@@ -21,9 +21,9 @@ local parentFrameOptions = {
 local parentFrameLabels = {
     ["UIParent"] = "Screen (UIParent)",
     ["PlayerFrame"] = "|cFF00AEF7Blizzard|r: Player Frame",
-    ["UUF_Player"] = "|cFF8080FFUnhalted|rUnitFrames: Player Frame",
+    ["UUF_Player"] = "|cFF8080FFUnhalted|rUF: Player Frame",
     ["ElvUF_Player"] = "|cff1784d1ElvUI|r: Player Frame",
-    ["MANUAL"] = "Custom (Use Input Below)",
+    ["MANUAL"] = "Custom",
 }
 
 
@@ -190,10 +190,10 @@ local options = {
                         --     get = function() return db.profile.TotemAnchor end, order = 4 },
                         XOffset = { name = "X Offset", type = "range", min = -500, max = 500, step = 0.1,
                             set = function(_, val) db.profile.XOffset = val; TotemRecall:UpdateLayout() end,
-                            get = function() return db.profile.XOffset end, order = 5 },
+                            get = function() return db.profile.XOffset end, order = 6 },
                         YOffset = { name = "Y Offset", type = "range", min = -500, max = 500, step = 0.1,
                             set = function(_, val) db.profile.YOffset = val; TotemRecall:UpdateLayout() end,
-                            get = function() return db.profile.YOffset end, order = 6 },
+                            get = function() return db.profile.YOffset end, order = 7 },
                         IconSpacing = {
                             name = "Icon Spacing",
                             desc = "Sets the distance between icons.",
@@ -201,7 +201,7 @@ local options = {
                             min = -50, max = 50, step = 0.1,
                             set = function(_, val) db.profile.IconSpacing = val; TotemRecall:UpdateLayout() end,
                             get = function(_) return db.profile.IconSpacing end,
-                            order = 11,
+                            order = 4,
                         },
                         GrowthDirection = {
                             name = "Growth Direction",
@@ -215,7 +215,7 @@ local options = {
                             },
                             set = function(_, val) db.profile.GrowthDirection = val; TotemRecall:UpdateLayout() end,
                             get = function() return db.profile.GrowthDirection end,
-                            order = 4,
+                            order = 5,
                         },
                         TimerXOffset = { 
                             name = "Timer X Offset", 
@@ -242,7 +242,7 @@ local options = {
                         FontHeader = {
                             type = "select",
                             dialogControl = "LSM30_Font",
-                            name = "Font Face",
+                            name = "Font",
                             values = LSM:HashTable("font"),
                             get = function() return db.profile.FontHeader end,
                             set = function(_, val) db.profile.FontHeader = val; TotemRecall:UpdateLayout() end,
