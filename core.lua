@@ -166,18 +166,30 @@ function TotemRecall:OnInitialize()
     
     local category, categoryID = LibStub("AceConfigDialog-3.0"):AddToBlizOptions("TotemRecall", "TotemRecall")
     
-    self:RegisterChatCommand("tr", function() 
+    -- Function to handle opening the menu with a combat check
+    local function OpenMenu()
+        if InCombatLockdown() then 
+            print("|cFFFF0000TotemRecall:|r Options are disabled during combat.")
+            return 
+        end
         if Settings and Settings.OpenToCategory then
             Settings.OpenToCategory(categoryID)
         end
-    end)
+    end
+
+    -- Register both commands to use the same function
+    self:RegisterChatCommand("tr", OpenMenu)
+    self:RegisterChatCommand("totemrecall", OpenMenu)
 
     if _G["TotemButtonMixin"] then
         hooksecurefunc(TotemButtonMixin, "OnLoad", ModifyTotemButton)
     end
+
+    -- Hook to ensure spacing is remembered when new totems are cast
     hooksecurefunc(TotemFrame, "Update", function() 
-        TotemRecall:UpdateLayout() 
+        self:UpdateLayout() 
     end)
+
     TotemFrame:HookScript("OnShow", function() self:UpdateLayout() end)
     C_Timer.After(1, function() self:UpdateLayout() end)
 end
