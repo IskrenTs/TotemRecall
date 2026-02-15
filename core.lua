@@ -1,5 +1,6 @@
 -- Register Addon
 TotemRecall = LibStub("AceAddon-3.0"):NewAddon("TotemRecall", "AceConsole-3.0")
+local LSM = LibStub("LibSharedMedia-3.0")
 local db
 
 local anchorPoints = {
@@ -18,6 +19,12 @@ local defaults = {
         YOffset = 0,
         IconScale = 1.0,
         IconSpacing = 2,
+        GrowthDirection = "RIGHT",
+        TimerXOffset = 0,
+        TimerYOffset = 0,
+        FontHeader = "Friz Quadrata TT",
+        FontSize = 12,
+        FontOutline = "OUTLINE",
     }
 }
 
@@ -70,7 +77,13 @@ local options = {
                         ParentAnchor = { name = "Parent Point", type = "select", values = anchorPoints, 
                             set = function(_, val) db.profile.ParentAnchor = val; TotemRecall:UpdateLayout() end,
                             get = function() return db.profile.ParentAnchor end, order = 3 },
-                        TotemAnchor = { name = "Totem Point", type = "select", values = anchorPoints, 
+                        TotemAnchor = { name = "Totem Point", type = "select", 
+                            values = {
+                                ["LEFT"] = "Left",
+                                ["RIGHT"] = "Right",
+                                ["TOP"] = "Top",
+                                ["BOTTOM"] = "Bottom",
+                            },    
                             set = function(_, val) db.profile.TotemAnchor = val; TotemRecall:UpdateLayout() end,
                             get = function() return db.profile.TotemAnchor end, order = 4 },
                         XOffset = { name = "X Offset", type = "range", min = -500, max = 500, step = 0.1,
@@ -87,9 +100,66 @@ local options = {
                             set = function(_, val) db.profile.IconSpacing = val; TotemRecall:UpdateLayout() end,
                             get = function(_) return db.profile.IconSpacing end,
                             order = 7,
-                        },    
+                        },
+                        GrowthDirection = {
+                            name = "Growth Direction",
+                            desc = "Which way the totems expand from the first icon.",
+                            type = "select",
+                            values = {
+                                ["LEFT"] = "Left",
+                                ["RIGHT"] = "Right",
+                                ["UP"] = "Up",
+                                ["DOWN"] = "Down",
+                            },
+                            set = function(_, val) db.profile.GrowthDirection = val; TotemRecall:UpdateLayout() end,
+                            get = function() return db.profile.GrowthDirection end,
+                            order = 8,
+                        },
+                        TimerXOffset = { 
+                            name = "Timer X Offset", 
+                            type = "range", min = -100, max = 100, step = 0.5,
+                            set = function(_, val) db.profile.TimerXOffset = val; TotemRecall:UpdateLayout() end,
+                            get = function() return db.profile.TimerXOffset end, 
+                            order = 9 
+                        },
+                        TimerYOffset = { 
+                            name = "Timer Y Offset", 
+                            type = "range", min = -100, max = 100, step = 0.5,
+                            set = function(_, val) db.profile.TimerYOffset = val; TotemRecall:UpdateLayout() end,
+                            get = function() return db.profile.TimerYOffset end, 
+                            order = 10 
+                        },                       
                     }
-                }
+                },
+                fontSettings = {
+                    name = "Font Settings",
+                    type = "group",
+                    inline = true,
+                    order = 4,
+                    args = {
+                        FontHeader = {
+                            type = "select",
+                            dialogControl = "LSM30_Font",
+                            name = "Font Face",
+                            values = LSM:HashTable("font"),
+                            get = function() return db.profile.FontHeader end,
+                            set = function(_, val) db.profile.FontHeader = val; TotemRecall:UpdateLayout() end,
+                        },
+                        FontSize = {
+                            name = "Font Size",
+                            type = "range", min = 6, max = 32, step = 1,
+                            get = function() return db.profile.FontSize end,
+                            set = function(_, val) db.profile.FontSize = val; TotemRecall:UpdateLayout() end,
+                        },
+                        FontOutline = {
+                            name = "Outline",
+                            type = "select",
+                            values = { [""] = "None", ["OUTLINE"] = "Thin", ["THICKOUTLINE"] = "Thick" },
+                            get = function() return db.profile.FontOutline end,
+                            set = function(_, val) db.profile.FontOutline = val; TotemRecall:UpdateLayout() end,
+                        },
+                    },
+                },                
             }
         },
         -- Profiles Tab (Added this)
@@ -98,16 +168,33 @@ local options = {
 }
 
 local function ModifyTotemButton(button)
-    if not db.profile.UseSquareMask then return end
-    
-    button.Border:Hide()
-    local atlas = C_Texture.GetAtlasInfo("SquareMask")
-    if atlas then
-        button.Icon.TextureMask:SetTexture(atlas.file or atlas.filename)
-        button.Icon.TextureMask:SetTexCoord(atlas.leftTexCoord, atlas.rightTexCoord, atlas.topTexCoord, atlas.bottomTexCoord)
+    -- Handle Square Masking
+    if db.profile.UseSquareMask then
+        button.Border:Hide()
+        local atlas = C_Texture.GetAtlasInfo("SquareMask")
+        if atlas then
+            button.Icon.TextureMask:SetTexture(atlas.file or atlas.filename)
+            button.Icon.TextureMask:SetTexCoord(atlas.leftTexCoord, atlas.rightTexCoord, atlas.topTexCoord, atlas.bottomTexCoord)
+            
+            button.Icon.Cooldown:SetSwipeTexture(atlas.file or atlas.filename)
+            button.Icon.Cooldown:SetTexCoordRange({x=atlas.leftTexCoord, y=atlas.topTexCoord}, {x=atlas.rightTexCoord, y=atlas.bottomTexCoord})
+        end
+    end
+
+    -- Handle Duration (Timer) Position and Visibility
+    if button.Duration then
+        -- 1. Get the font path from SharedMedia
+        local fontPath = LSM:Fetch("font", db.profile.FontHeader)
         
-        button.Icon.Cooldown:SetSwipeTexture(atlas.file or atlas.filename)
-        button.Icon.Cooldown:SetTexCoordRange({x=atlas.leftTexCoord, y=atlas.topTexCoord}, {x=atlas.rightTexCoord, y=atlas.bottomTexCoord})
+        -- 2. Apply font, size, and outline
+        button.Duration:SetFont(fontPath, db.profile.FontSize, db.profile.FontOutline)
+        button.Duration:SetShadowColor(0, 0, 0, 1) -- Black shadow with full opacity
+        button.Duration:SetShadowOffset(1, -1)     -- Offset by 1 pixel down and right
+        -- 3. High Strata & Positioning
+        button.Duration:SetParent(button) -- Ensure it stays with the icon
+        button.Duration:SetDrawLayer("OVERLAY", 7)
+        button.Duration:ClearAllPoints()
+        button.Duration:SetPoint("CENTER", button, "CENTER", db.profile.TimerXOffset, db.profile.TimerYOffset)
     end
 end
 
@@ -118,18 +205,32 @@ function TotemRecall:UpdateLayout()
     -- Position main container
     TotemFrame:SetParent(parent)
     TotemFrame:ClearAllPoints()
+    -- We anchor the frame itself to your chosen point
     TotemFrame:SetPoint(db.profile.TotemAnchor, parent, db.profile.ParentAnchor, db.profile.XOffset, db.profile.YOffset)
     TotemFrame:SetScale(db.profile.IconScale)
 
-    -- Manually space buttons to override the default gap
+    local direction = db.profile.GrowthDirection
+    local spacing = db.profile.IconSpacing
     local lastButton = nil
+
+    -- Use a sorted list or the pool to ensure consistent ordering
     for button in TotemFrame.totemPool:EnumerateActive() do
         button:ClearAllPoints()
+        
         if not lastButton then
-            button:SetPoint("LEFT", TotemFrame, "LEFT", 0, 0)
+            -- FIRST BUTTON: Anchor to the center of the TotemFrame container
+            button:SetPoint("CENTER", TotemFrame, "CENTER", 0, 0)
         else
-            -- Anchor to the right of the previous button using our spacing setting
-            button:SetPoint("LEFT", lastButton, "RIGHT", db.profile.IconSpacing, 0)
+            -- SUBSEQUENT BUTTONS: Anchor based on GrowthDirection
+            if direction == "RIGHT" then
+                button:SetPoint("LEFT", lastButton, "RIGHT", spacing, 0)
+            elseif direction == "LEFT" then
+                button:SetPoint("RIGHT", lastButton, "LEFT", -spacing, 0)
+            elseif direction == "UP" then
+                button:SetPoint("BOTTOM", lastButton, "TOP", 0, spacing)
+            elseif direction == "DOWN" then
+                button:SetPoint("TOP", lastButton, "BOTTOM", 0, -spacing)
+            end
         end
         
         ModifyTotemButton(button)
