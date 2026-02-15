@@ -17,8 +17,7 @@ local defaults = {
         XOffset = 0,
         YOffset = 0,
         IconScale = 1.0,
-        IconSize = 37,      -- New default size
-        IconSpacing = 2,    -- New default spacing
+        IconSpacing = 2,
     }
 }
 
@@ -80,23 +79,14 @@ local options = {
                         YOffset = { name = "Y Offset", type = "range", min = -500, max = 500, step = 0.1,
                             set = function(_, val) db.profile.YOffset = val; TotemRecall:UpdateLayout() end,
                             get = function() return db.profile.YOffset end, order = 6 },
-                        -- IconSize = {
-                        --     name = "Icon Size",
-                        --     desc = "Sets the width and height of the totem icons.",
-                        --     type = "range",
-                        --     min = 10, max = 64, step = 1,
-                        --     set = function(_, val) db.profile.IconSize = val; TotemRecall:UpdateLayout() end,
-                        --     get = function(_) return db.profile.IconSize end,
-                        --     order = 10,
-                        -- },
                         IconSpacing = {
                             name = "Icon Spacing",
-                            desc = "Sets the distance between icons (requires smaller icon size to see effect).",
+                            desc = "Sets the distance between icons.",
                             type = "range",
                             min = -50, max = 50, step = 0.1,
                             set = function(_, val) db.profile.IconSpacing = val; TotemRecall:UpdateLayout() end,
                             get = function(_) return db.profile.IconSpacing end,
-                            order = 11,
+                            order = 7,
                         },    
                     }
                 }
@@ -108,9 +98,6 @@ local options = {
 }
 
 local function ModifyTotemButton(button)
-    -- Use the size from our settings
-    button:SetSize(db.profile.IconSize, db.profile.IconSize)
-
     if not db.profile.UseSquareMask then return end
     
     button.Border:Hide()

@@ -1,6 +1,8 @@
 ## Interface: 120001
-## Title: BlizzTotemRelocator
+## Title: TotemRecall
+## Author: Mantis
 ## Notes: Custom positioning and square masks for Totems.
+## IconTexture: Interface\AddOns\TotemRecall\Media\LogoTotemRecall.tga
 ## SavedVariables: MyTotemDB
 ## OptionalDeps: Ace3
 
