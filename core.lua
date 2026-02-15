@@ -9,24 +9,63 @@ local anchorPoints = {
     ["BOTTOMLEFT"] = "Bottom Left", ["BOTTOM"] = "Bottom", ["BOTTOMRIGHT"] = "Bottom Right",
 }
 
+
+local parentFrameOptions = {
+    "UIParent",
+    "PlayerFrame",
+    "UUF_Player",
+    "ElvUF_Player",
+    "MANUAL",
+}
+
+local parentFrameLabels = {
+    ["UIParent"] = "Screen (UIParent)",
+    ["PlayerFrame"] = "|cFF00AEF7Blizzard|r: Player Frame",
+    ["UUF_Player"] = "|cFF8080FFUnhalted|rUnitFrames: Player Frame",
+    ["ElvUF_Player"] = "|cff1784d1ElvUI|r: Player Frame",
+    ["MANUAL"] = "Custom (Use Input Below)",
+}
+
+
+
+
+
+
 local defaults = {
     profile = {
         ParentFrameName = "UIParent",
+        ParentSelectMode = "UIParent",
         ParentAnchor = "CENTER",
         TotemAnchor = "CENTER",
         UseSquareMask = true,
         XOffset = 0,
         YOffset = 0,
         IconScale = 1.0,
-        IconSpacing = 2,
+        IconSpacing = 0,
         GrowthDirection = "RIGHT",
         TimerXOffset = 0,
         TimerYOffset = 0,
         FontHeader = "Friz Quadrata TT",
         FontSize = 12,
         FontOutline = "OUTLINE",
+        TestMode = false,
+        TestCount = 1,
     }
 }
+local testModeTicker -- Variable to hold the timer reference
+
+local function DisableTestMode()
+    if db.profile.TestMode then
+        db.profile.TestMode = false
+        TotemRecall:UpdateLayout()
+        LibStub("AceConfigRegistry-3.0"):NotifyChange("TotemRecall")
+    end
+    -- Stop the timer if it exists
+    if testModeTicker then
+        testModeTicker:Cancel()
+        testModeTicker = nil
+    end
+end
 
 -- GUI Layout
 local options = {
@@ -47,6 +86,43 @@ local options = {
                     get = function() return db.profile.UseSquareMask end,
                     order = 1,
                 },
+                TestMode = {
+                    name = "Dummy icons",
+                    desc = "Shows dummy icons. Auto-disables when closing settings.",
+                    type = "toggle",
+                    set = function(_, val) 
+                        db.profile.TestMode = val
+                        TotemRecall:UpdateLayout() 
+                        
+                        if val then
+                            -- Start the CPU-efficient monitor only when TestMode is ON
+                            testModeTicker = C_Timer.NewTicker(0.5, function()
+                                -- Check both the New Retail Settings and the AceConfig floating windows
+                                local isSettingsOpen = (SettingsPanel and SettingsPanel:IsShown()) 
+                                local isAceOpen = LibStub("AceConfigDialog-3.0").OpenFrames["TotemRecall"]
+                                
+                                if not isSettingsOpen and not isAceOpen then
+                                    DisableTestMode()
+                                end
+                            end)
+                        elseif testModeTicker then
+                            testModeTicker:Cancel()
+                            testModeTicker = nil
+                        end
+                    end,
+                    get = function() return db.profile.TestMode end,
+                    order = 0,
+                },
+                TestCount = {
+                    name = "Dummy Icon Count",
+                    desc = "Number of dummy icons to show during Test Mode.",
+                    type = "range",
+                    min = 1, max = 4, step = 1,
+                    set = function(_, val) db.profile.TestCount = val; TotemRecall:UpdateLayout() end,
+                    get = function() return db.profile.TestCount end,
+                    disabled = function() return not db.profile.TestMode end,
+                    order = 0.5,
+                },
                 reset = {
                     name = "Reset Current Profile",
                     type = "execute",
@@ -60,6 +136,31 @@ local options = {
                     inline = true,
                     order = 3,
                     args = {
+                        ParentSelect = {
+                            name = "Attach To",
+                            desc = "Choose a common frame to attach totems to.",
+                            type = "select",
+                            -- This sorting logic ensures the order stays exactly as defined above
+                            values = function()
+                                local t = {}
+                                for _, key in ipairs(parentFrameOptions) do
+                                    t[key] = parentFrameLabels[key]
+                                end
+                                return t
+                            end,
+                            -- Alternatively, AceConfig respects numeric sorting if keys are numbers,
+                            -- but using string keys with a sorting hint is usually cleaner.
+                            sorting = parentFrameOptions, 
+                            set = function(_, val) 
+                                if val ~= "MANUAL" then
+                                    db.profile.ParentFrameName = val
+                                end
+                                db.profile.ParentSelectMode = val
+                                TotemRecall:UpdateLayout() 
+                            end,
+                            get = function() return db.profile.ParentSelectMode or "UIParent" end,
+                            order = 0.5,
+                        },
                         ParentFrameName = {
                             name = "Parent Frame",
                             type = "input",
@@ -74,18 +175,19 @@ local options = {
                             get = function() return db.profile.IconScale end,
                             order = 2,
                         },
-                        ParentAnchor = { name = "Parent Point", type = "select", values = anchorPoints, 
+                        ParentAnchor = { name = "Parent Anchor Point", type = "select", values = anchorPoints, 
                             set = function(_, val) db.profile.ParentAnchor = val; TotemRecall:UpdateLayout() end,
                             get = function() return db.profile.ParentAnchor end, order = 3 },
-                        TotemAnchor = { name = "Totem Point", type = "select", 
-                            values = {
-                                ["LEFT"] = "Left",
-                                ["RIGHT"] = "Right",
-                                ["TOP"] = "Top",
-                                ["BOTTOM"] = "Bottom",
-                            },    
-                            set = function(_, val) db.profile.TotemAnchor = val; TotemRecall:UpdateLayout() end,
-                            get = function() return db.profile.TotemAnchor end, order = 4 },
+                        -- TotemAnchor = { name = "Totem Point", type = "select", 
+                        --     values = {
+                        --         ["CENTER"] = "Center",
+                        --         ["LEFT"] = "Left",
+                        --         ["RIGHT"] = "Right",
+                        --         ["TOP"] = "Top",
+                        --         ["BOTTOM"] = "Bottom",
+                        --     },    
+                        --     set = function(_, val) db.profile.TotemAnchor = val; TotemRecall:UpdateLayout() end,
+                        --     get = function() return db.profile.TotemAnchor end, order = 4 },
                         XOffset = { name = "X Offset", type = "range", min = -500, max = 500, step = 0.1,
                             set = function(_, val) db.profile.XOffset = val; TotemRecall:UpdateLayout() end,
                             get = function() return db.profile.XOffset end, order = 5 },
@@ -99,7 +201,7 @@ local options = {
                             min = -50, max = 50, step = 0.1,
                             set = function(_, val) db.profile.IconSpacing = val; TotemRecall:UpdateLayout() end,
                             get = function(_) return db.profile.IconSpacing end,
-                            order = 7,
+                            order = 11,
                         },
                         GrowthDirection = {
                             name = "Growth Direction",
@@ -113,7 +215,7 @@ local options = {
                             },
                             set = function(_, val) db.profile.GrowthDirection = val; TotemRecall:UpdateLayout() end,
                             get = function() return db.profile.GrowthDirection end,
-                            order = 8,
+                            order = 4,
                         },
                         TimerXOffset = { 
                             name = "Timer X Offset", 
@@ -198,43 +300,103 @@ local function ModifyTotemButton(button)
     end
 end
 
+local dummyButtons = {} -- Outside the function
+
 function TotemRecall:UpdateLayout()
     local parent = _G[db.profile.ParentFrameName]
-    if not TotemFrame or not parent then return end
+    
+    -- Fallback to UIParent if the chosen frame doesn't exist
+    if not parent then 
+        parent = UIParent 
+    end
+    
+    if not TotemFrame then return end
 
-    -- Position main container
+    -- 1. Standard Positioning
     TotemFrame:SetParent(parent)
+    TotemFrame:SetFrameStrata("HIGH")
     TotemFrame:ClearAllPoints()
-    -- We anchor the frame itself to your chosen point
     TotemFrame:SetPoint(db.profile.TotemAnchor, parent, db.profile.ParentAnchor, db.profile.XOffset, db.profile.YOffset)
     TotemFrame:SetScale(db.profile.IconScale)
 
+    -- 2. THE FIX: Force Visibility for Test Mode
+    if db.profile.TestMode then
+        TotemFrame:SetAlpha(1)
+        TotemFrame:Show() -- Force the container to show
+        
+        -- Hide existing dummies to refresh
+        for _, btn in ipairs(dummyButtons) do btn:Hide() end
+
+        for i = 1, db.profile.TestCount do
+            if not dummyButtons[i] then
+                local btn = CreateFrame("Button", "TotemRecallDummy"..i, TotemFrame, "TotemButtonTemplate")
+                btn:SetFrameStrata("HIGH") 
+                btn:SetFrameLevel(100)
+                btn:EnableMouse(false)
+                --btn:SetScript("OnEnter", nil)
+                btn:SetScript("OnLeave", nil)
+                -- Fix Icon & 16px Offset
+                local icon = btn.Icon or btn.icon
+                if icon then
+                    local tex = icon.Texture or icon.iconTexture or icon
+                    if tex and tex.SetTexture then
+                        tex:SetTexture("Interface\\Icons\\Spell_Nature_StoneSkinTotem")
+                        tex:ClearAllPoints()
+                        tex:SetAllPoints(icon)
+                    end
+                    icon:ClearAllPoints()
+                    icon:SetPoint("CENTER", btn, "CENTER", 0, 0)
+                    btn.Icon = icon
+                end
+                
+                if btn.Duration then btn.Duration:Hide() end
+                dummyButtons[i] = btn
+            end
+            dummyButtons[i]:Show()
+            ModifyTotemButton(dummyButtons[i]) -- Apply Square Mask
+        end
+    else
+        -- Hide dummies when test mode is off
+        for _, btn in ipairs(dummyButtons) do btn:Hide() end
+    end
+
+    -- 3. Positioning Logic
     local direction = db.profile.GrowthDirection
     local spacing = db.profile.IconSpacing
-    local lastButton = nil
-
-    -- Use a sorted list or the pool to ensure consistent ordering
+    local activeTotems = {}
+    
     for button in TotemFrame.totemPool:EnumerateActive() do
+        table.insert(activeTotems, button)
+    end
+    
+    -- If no real totems, use dummies
+    if #activeTotems == 0 and db.profile.TestMode then
+        for i = 1, db.profile.TestCount do
+            if dummyButtons[i] then table.insert(activeTotems, dummyButtons[i]) end
+        end
+    end
+
+-- Position all buttons
+    for i, button in ipairs(activeTotems) do
         button:ClearAllPoints()
-        
-        if not lastButton then
-            -- FIRST BUTTON: Anchor to the center of the TotemFrame container
-            button:SetPoint("CENTER", TotemFrame, "CENTER", 0, 0)
+        if i == 1 then
+            -- Check if we are using dummies (Test Mode with no real totems)
+            local yOffset = 0
+            if db.profile.TestMode and #activeTotems == db.profile.TestCount then
+                yOffset = -1 -- Nudge dummies down 1px to match real totem alignment
+            end
+            
+            button:SetPoint("CENTER", TotemFrame, "CENTER", 0, yOffset)
         else
-            -- SUBSEQUENT BUTTONS: Anchor based on GrowthDirection
-            if direction == "RIGHT" then
-                button:SetPoint("LEFT", lastButton, "RIGHT", spacing, 0)
-            elseif direction == "LEFT" then
-                button:SetPoint("RIGHT", lastButton, "LEFT", -spacing, 0)
-            elseif direction == "UP" then
-                button:SetPoint("BOTTOM", lastButton, "TOP", 0, spacing)
-            elseif direction == "DOWN" then
-                button:SetPoint("TOP", lastButton, "BOTTOM", 0, -spacing)
+            local prev = activeTotems[i-1]
+            if direction == "RIGHT" then button:SetPoint("LEFT", prev, "RIGHT", spacing, 0)
+            elseif direction == "LEFT" then button:SetPoint("RIGHT", prev, "LEFT", -spacing, 0)
+            elseif direction == "UP" then button:SetPoint("BOTTOM", prev, "TOP", 0, spacing)
+            elseif direction == "DOWN" then button:SetPoint("TOP", prev, "BOTTOM", 0, -spacing)
             end
         end
         
         ModifyTotemButton(button)
-        lastButton = button
     end
 end
 
@@ -264,7 +426,15 @@ function TotemRecall:OnInitialize()
             Settings.OpenToCategory(categoryID)
         end
     end
-
+    -- Check every 0.5 seconds if the settings are still open
+    C_Timer.NewTicker(0.5, function()
+        if db.profile.TestMode then
+            -- Check if the Blizzard Settings or AceConfig dialog is actually visible
+            if not SettingsPanel:IsShown() and not LibStub("AceConfigDialog-3.0").OpenFrames["TotemRecall"] then
+                DisableTestMode()
+            end
+        end
+    end)
     -- Register both commands to use the same function
     self:RegisterChatCommand("tr", OpenMenu)
     self:RegisterChatCommand("totemrecall", OpenMenu)
