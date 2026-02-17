@@ -1,6 +1,7 @@
 -- Register Addon
 TotemRecall = LibStub("AceAddon-3.0"):NewAddon("TotemRecall", "AceConsole-3.0")
 local LSM = LibStub("LibSharedMedia-3.0")
+local squareAtlas = C_Texture.GetAtlasInfo("SquareMask")
 local db
 
 local anchorPoints = {
@@ -85,16 +86,16 @@ local options = {
                     name = "Dummy icons",
                     desc = "Shows dummy icons. Auto-disables when closing settings.",
                     type = "toggle",
-                    set = function(_, val) 
+                    set = function(_, val)
                         db.profile.TestMode = val
-                        TotemRecall:UpdateLayout() 
+                        TotemRecall:UpdateLayout()
                         if val then
                             -- Start the CPU-efficient monitor only when TestMode is ON
                             testModeTicker = C_Timer.NewTicker(0.5, function()
                                 -- Check both the New Retail Settings and the AceConfig floating windows
-                                local isSettingsOpen = (SettingsPanel and SettingsPanel:IsShown()) 
+                                local isSettingsOpen = (SettingsPanel and SettingsPanel:IsShown())
                                 local isAceOpen = LibStub("AceConfigDialog-3.0").OpenFrames["TotemRecall"]
-                                
+
                                 if not isSettingsOpen and not isAceOpen then
                                     DisableTestMode()
                                 end
@@ -128,8 +129,8 @@ local options = {
                     name = "Masque Support",
                     desc = "Enable skinning via Masque (Requires 'Use Square Mask' and Reload)",
                     type = "toggle",
-                    set = function(_, val) 
-                        db.profile.useMasque = val 
+                    set = function(_, val)
+                        db.profile.useMasque = val
                         print("|cFFFF0000TotemRecall:|r You must reload your UI for Masque changes to take effect.")
                     end,
                     get = function() return db.profile.useMasque end,
@@ -152,13 +153,13 @@ local options = {
                                 end
                                 return t
                             end,
-                            sorting = parentFrameOptions, 
-                            set = function(_, val) 
+                            sorting = parentFrameOptions,
+                            set = function(_, val)
                                 if val ~= "MANUAL" then
                                     db.profile.ParentFrameName = val
                                 end
                                 db.profile.ParentSelectMode = val
-                                TotemRecall:UpdateLayout() 
+                                TotemRecall:UpdateLayout()
                             end,
                             get = function() return db.profile.ParentSelectMode or "UIParent" end,
                             order = 1,
@@ -177,7 +178,7 @@ local options = {
                             get = function() return db.profile.IconScale end,
                             order = 3,
                         },
-                        ParentAnchor = { name = "Parent Anchor Point", type = "select", values = anchorPoints, 
+                        ParentAnchor = { name = "Parent Anchor Point", type = "select", values = anchorPoints,
                             set = function(_, val) db.profile.ParentAnchor = val; TotemRecall:UpdateLayout() end,
                             get = function() return db.profile.ParentAnchor end, order = 4 },
                         -- TotemAnchor = { name = "Totem Point", type = "select", 
@@ -248,22 +249,22 @@ local options = {
                             get = function() return db.profile.FontOutline end,
                             set = function(_, val) db.profile.FontOutline = val; TotemRecall:UpdateLayout() end,
                         },
-                         TimerXOffset = { 
-                            name = "Timer X Offset", 
+                         TimerXOffset = {
+                            name = "Timer X Offset",
                             type = "range", min = -100, max = 100, step = 0.5,
                             set = function(_, val) db.profile.TimerXOffset = val; TotemRecall:UpdateLayout() end,
-                            get = function() return db.profile.TimerXOffset end, 
-                            order = 10 
+                            get = function() return db.profile.TimerXOffset end,
+                            order = 10
                         },
-                        TimerYOffset = { 
-                            name = "Timer Y Offset", 
+                        TimerYOffset = {
+                            name = "Timer Y Offset",
                             type = "range", min = -100, max = 100, step = 0.5,
                             set = function(_, val) db.profile.TimerYOffset = val; TotemRecall:UpdateLayout() end,
-                            get = function() return db.profile.TimerYOffset end, 
-                            order =11 
-                        },                            
+                            get = function() return db.profile.TimerYOffset end,
+                            order =11
+                        },
                     },
-                },                
+                },
             }
         },
     }
@@ -280,17 +281,16 @@ local function ModifyTotemButton(btn)
     end
 
     -- SQUARE MASK LOGIC + Masque check
-    local isMasqueEnabled = db.profile.useMasque and TotemRecall.MasqueGroup 
-    
+    local isMasqueEnabled = db.profile.useMasque and TotemRecall.MasqueGroup
+
     if db.profile.UseSquareMask then
         btn.Border:Hide()
-        local atlas = C_Texture.GetAtlasInfo("SquareMask")
-        if atlas then
-            btn.Icon.TextureMask:SetTexture(atlas.file or atlas.filename)
-            btn.Icon.TextureMask:SetTexCoord(atlas.leftTexCoord, atlas.rightTexCoord, atlas.topTexCoord, atlas.bottomTexCoord)
+        if squareAtlas then
+            btn.Icon.TextureMask:SetTexture(squareAtlas.file or squareAtlas.filename)
+            btn.Icon.TextureMask:SetTexCoord(squareAtlas.leftTexCoord, squareAtlas.rightTexCoord, squareAtlas.topTexCoord, squareAtlas.bottomTexCoord)
             if btn.Icon.Cooldown then
-                btn.Icon.Cooldown:SetSwipeTexture(atlas.file or atlas.filename)
-                btn.Icon.Cooldown:SetTexCoordRange({x=atlas.leftTexCoord, y=atlas.topTexCoord}, {x=atlas.rightTexCoord, y=atlas.bottomTexCoord})
+                btn.Icon.Cooldown:SetSwipeTexture(squareAtlas.file or squareAtlas.filename)
+                btn.Icon.Cooldown:SetTexCoordRange({x=squareAtlas.leftTexCoord, y=squareAtlas.topTexCoord}, {x=squareAtlas.rightTexCoord, y=squareAtlas.bottomTexCoord})
             end
         end
     else
@@ -302,12 +302,12 @@ local dummyButtons = {}
 
 function TotemRecall:UpdateLayout()
     local parent = _G[db.profile.ParentFrameName]
-    
+
     -- Fallback to UIParent if the chosen frame doesn't exist
-    if not parent then 
-        parent = UIParent 
+    if not parent then
+        parent = UIParent
     end
-    
+
     if not TotemFrame then return end
 
     -- Standard Positioning
@@ -320,22 +320,21 @@ function TotemRecall:UpdateLayout()
     -- Force Visibility for Test Mode
     if db.profile.TestMode then
         TotemFrame:SetAlpha(1)
-        TotemFrame:Show() 
-        
+        TotemFrame:Show()
+
         -- Hide existing dummies to refresh
         for _, btn in ipairs(dummyButtons) do btn:Hide() end
 
         for i = 1, db.profile.TestCount do
             if not dummyButtons[i] then
                 local btn = CreateFrame("Button", "TotemRecallDummy"..i, TotemFrame, "TotemButtonTemplate")
-                btn:SetFrameStrata("HIGH") 
+                btn:SetFrameStrata("HIGH")
                 btn:SetFrameLevel(100)
                 btn:EnableMouse(false)
-                --btn:SetScript("OnEnter", nil)
                 btn:SetScript("OnLeave", nil)
                 local icon = btn.Icon or btn.icon
                 if icon then
-                    local tex = icon.Texture or icon.iconTexture or icon
+                    local tex = icon.Texture or icon
                     if tex and tex.SetTexture then
                         tex:SetTexture("Interface\\Icons\\Spell_Nature_StoneSkinTotem")
                         tex:ClearAllPoints()
@@ -345,12 +344,16 @@ function TotemRecall:UpdateLayout()
                     icon:SetPoint("CENTER", btn, "CENTER", 0, 0)
                     btn.Icon = icon
                 end
-                
-                if btn.Duration then btn.Duration:Hide() end
+
+                if btn.Duration then
+                    btn.Duration:SetText("")
+                    btn.Duration:Show()
+                end
+
                 dummyButtons[i] = btn
             end
             dummyButtons[i]:Show()
-            ModifyTotemButton(dummyButtons[i]) -- Apply Square Mask
+            ModifyTotemButton(dummyButtons[i])
         end
     else
         -- Hide dummies when test mode is off
@@ -363,7 +366,7 @@ function TotemRecall:UpdateLayout()
     local activeTotems = {}
 
     for _, child in ipairs({ TotemFrame:GetChildren() }) do
-        if child.Icon and child:IsShown() then
+        if child:IsShown() and child.Icon and child:GetObjectType() == "Button" then
             table.insert(activeTotems, child)
         end
     end
@@ -384,7 +387,7 @@ function TotemRecall:UpdateLayout()
             if db.profile.TestMode and #activeTotems == db.profile.TestCount then
                 yOffset = -1 -- Nudge dummies down 1px to match real totem alignment
             end
-            
+
             btn:SetPoint("CENTER", TotemFrame, "CENTER", 0, yOffset)
         else
             local prev = activeTotems[i-1]
@@ -394,7 +397,7 @@ function TotemRecall:UpdateLayout()
             elseif direction == "DOWN" then btn:SetPoint("TOP", prev, "BOTTOM", 0, -spacing)
             end
         end
-        
+
         ModifyTotemButton(btn)
     end
     if db.profile.useMasque and TotemRecall.MasqueGroup then
@@ -403,6 +406,7 @@ function TotemRecall:UpdateLayout()
     for _, btn in ipairs(activeTotems) do
         if btn.Duration then
             local fontPath = LSM:Fetch("font", db.profile.FontHeader)
+            btn.Duration:SetDrawLayer("OVERLAY", 7)
             btn.Duration:SetFont(fontPath, db.profile.FontSize, db.profile.FontOutline)
             btn.Duration:ClearAllPoints()
             btn.Duration:SetPoint("CENTER", btn, "CENTER",
@@ -417,6 +421,14 @@ function TotemRecall:OnInitialize()
     -- Initialize DB with Profiles
     self.db = LibStub("AceDB-3.0"):New("MyTotemDB", defaults, true)
     db = self.db
+    -- Make sure Test mode is disabled on login
+    db.profile.TestMode = false
+
+    if testModeTicker then
+        testModeTicker:Cancel()
+        testModeTicker = nil
+    end
+
     if db.profile.useMasque then
         local MQ = LibStub("Masque", true)
         if MQ then
@@ -425,6 +437,7 @@ function TotemRecall:OnInitialize()
     end
     -- Tell the DB to refresh the UI whenever the profile changes
     local function RefreshEverything()
+        db.profile.TestMode = false
         TotemRecall:UpdateLayout()
         if TotemRecall.MasqueGroup then
             TotemRecall.MasqueGroup:ReSkin()
@@ -438,28 +451,20 @@ function TotemRecall:OnInitialize()
     -- Setup Options
     options.args.profiles = LibStub("AceDBOptions-3.0"):GetOptionsTable(self.db)
     LibStub("AceConfig-3.0"):RegisterOptionsTable("TotemRecall", options)
-    
+
     local category, categoryID = LibStub("AceConfigDialog-3.0"):AddToBlizOptions("TotemRecall", "TotemRecall")
-    
+
     -- Function to handle opening the menu with a combat check
     local function OpenMenu()
-        if InCombatLockdown() then 
+        if InCombatLockdown() then
             print("|cFFFF0000TotemRecall:|r Options are disabled during combat.")
-            return 
+            return
         end
         if Settings and Settings.OpenToCategory then
             Settings.OpenToCategory(categoryID)
         end
     end
-    -- Check every 0.5 seconds if the settings are still open
-    -- C_Timer.NewTicker(0.5, function()
-    --     if db.profile.TestMode then
-    --         -- Check if the Blizzard Settings or AceConfig dialog is actually visible
-    --         if not SettingsPanel:IsShown() and not LibStub("AceConfigDialog-3.0").OpenFrames["TotemRecall"] then
-    --             DisableTestMode()
-    --         end
-    --     end
-    -- end)
+
     self:RegisterChatCommand("tr", OpenMenu)
     self:RegisterChatCommand("totemrecall", OpenMenu)
 
@@ -468,10 +473,15 @@ function TotemRecall:OnInitialize()
     end
 
     -- Hook to ensure spacing is remembered when new totems are cast
-    hooksecurefunc(TotemFrame, "Update", function() 
-        self:UpdateLayout() 
-    end)
+    if TotemFrame then
+        hooksecurefunc(TotemFrame, "Update", function()
+            self:UpdateLayout()
+        end)
 
-    TotemFrame:HookScript("OnShow", function() self:UpdateLayout() end)
+        TotemFrame:HookScript("OnShow", function()
+            self:UpdateLayout()
+        end)
+    end
+
     C_Timer.After(1, function() self:UpdateLayout() end)
 end
