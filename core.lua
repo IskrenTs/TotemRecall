@@ -15,6 +15,7 @@ local parentFrameOptions = {
     "PlayerFrame",
     "UUF_Player",
     "ElvUF_Player",
+    "EllesmereUIUnitFrames_Player",
     "MANUAL",
 }
 
@@ -23,6 +24,7 @@ local parentFrameLabels = {
     ["PlayerFrame"] = "|cFF00AEF7Blizzard|r: Player Frame",
     ["UUF_Player"] = "|cFF8080FFUnhalted|rUF: Player Frame",
     ["ElvUF_Player"] = "|cff1784d1ElvUI|r: Player Frame",
+    ["EllesmereUIUnitFrames_Player"] = "|c0CD29DEUI|r: Player Frame",
     ["MANUAL"] = "Custom",
 }
 
